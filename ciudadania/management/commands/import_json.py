@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
                 family_number += 1
 
-            self.stdout.write(self.style.SUCCESS("Import successful"))
+        self.stdout.write(self.style.SUCCESS("Import successful"))
 
 
 def create_person_and_descendants(person, family_number, parents=[]):
