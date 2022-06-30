@@ -15,8 +15,8 @@ class PartnerRel(StructuredRel):
 
 class Person(StructuredNode):
     name = StringProperty(required=True)
-    family = IntegerProperty(required=True, index=True)
-    SEXES = {"MALE": "Male", "FEMALE": "Female", "": "Other"}
+    family_uuid = StringProperty(max_length=36, index=True)
+    SEXES = {"MALE": "Male", "FEMALE": "Female", "OTHER": "Other"}
     sex = StringProperty(required=True, choices=SEXES)
     birthday = DateProperty(required=False)
     has_citizenship = BooleanProperty(required=True)

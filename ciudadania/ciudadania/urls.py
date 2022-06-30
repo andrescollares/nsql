@@ -15,9 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from italiana.views import Index
+from italiana.views import index, create_family
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', Index, name="index"),
+    path('', index, name="index"),
+    path('create_family/', create_family, name="create_family"),
 ]
