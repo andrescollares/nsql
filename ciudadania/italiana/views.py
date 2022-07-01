@@ -4,6 +4,7 @@ import uuid
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from datetime import datetime
 
 from .models import Person
 
@@ -28,10 +29,13 @@ def index(request):
 @csrf_exempt
 def create_family(request):
     if request.method == "POST":
-        json_data = json.loads(request.body)
+        data = request.POST.dict()
+        members = json.loads(data["members"])
+        relations_partners = json.loads(data["relations_partners"])
+        relations_offsprings = json.loads(data["relations_offsprings"])
         family_number = uuid.uuid4()
         person_id = {}
-        for person in json_data["members"]:
+        for person in members:
             instance = Person(
                 name=person["name"],
                 family=family_number,
@@ -41,18 +45,19 @@ def create_family(request):
 
             birthday = person["birthday"]
             if birthday:
-                instance.birthday = birthday
+                instance.birthday = datetime.strptime(birthday, '%Y-%m-%d')
 
-            citizenship_resignation_date = person["citizenship_resignation_date"]
+            citizenship_resignation_date = person.get("citizenship_resignation_date")
             if citizenship_resignation_date:
-                instance.citizenship_resignation_date = citizenship_resignation_date
+                instance.citizenship_resignation_date = datetime.strptime(citizenship_resignation_date, '%y-%m-%d')
 
             instance.save()
 
             person_id[person["id"]] = instance
 
-        for relation_partner in json_data["relations_partners"]:
+        for relation_partner in relations_partners:
             person_id[relation_partner["first"]].partner.connect(person_id[relation_partner["second"]], {"is_married": relation_partner["married"]})
 
-        for relation_offspring in json_data["relations_offsprings"]:
+        for relation_offspring in relations_offsprings:
             person_id[relation_offspring["first"]].offspring.connect(person_id[relation_offspring["second"]])
+        return HttpResponse("", status=201)
