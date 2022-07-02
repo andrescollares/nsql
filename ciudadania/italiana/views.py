@@ -4,6 +4,7 @@ import uuid
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from datetime import datetime
 
 from neomodel.match import Traversal, OUTGOING, db
 
@@ -33,6 +34,7 @@ def add_family_uuid(member, family_uuid):
 @csrf_exempt
 def create_family(request):
     if request.method == "POST":
+<<<<<<< HEAD
         json_data = json.loads(request.body)
         family_uuid = uuid.uuid4()
         persons = [add_family_uuid(member, family_uuid) for member in json_data["members"]]
@@ -46,6 +48,7 @@ def create_family(request):
         for relation_offspring in json_data["relations_offspring"]:
             people[relation_offspring["first"]].offspring.connect(people[relation_offspring["second"]])
     # TODO redirect to the algorithm run
+        return HttpResponse("", status=201)
 
 
 @csrf_exempt
