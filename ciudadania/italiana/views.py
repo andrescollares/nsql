@@ -34,7 +34,6 @@ def add_family_uuid(member, family_uuid):
 @csrf_exempt
 def create_family(request):
     if request.method == "POST":
-<<<<<<< HEAD
         json_data = json.loads(request.body)
         family_uuid = uuid.uuid4()
         persons = [add_family_uuid(member, family_uuid) for member in json_data["members"]]
