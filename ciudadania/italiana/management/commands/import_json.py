@@ -57,9 +57,12 @@ def create_person(person, family_number):
     )
 
     birthday = person["birthday"]
+    date_of_death = person["date_of_death"]
     citizenship_resignation_date = person["citizenship_resignation_date"]
     if birthday:
         instance.birthday = datetime.datetime.fromisoformat(birthday)
+    if date_of_death:
+        instance.date_of_death = datetime.datetime.fromisoformat(date_of_death)
     if citizenship_resignation_date:
         instance.citizenship_resignation_date = datetime.datetime.fromisoformat(citizenship_resignation_date)
 
