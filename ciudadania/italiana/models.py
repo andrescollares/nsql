@@ -19,6 +19,7 @@ class Person(StructuredNode):
     SEXES = {"MALE": "Male", "FEMALE": "Female", "OTHER": "Other"}
     sex = StringProperty(required=True, choices=SEXES)
     birthday = DateProperty(required=False)
+    date_of_death = DateProperty(required=False)
     has_citizenship = BooleanProperty(required=True)
     citizenship_resignation_date = DateProperty(required=False)
 
