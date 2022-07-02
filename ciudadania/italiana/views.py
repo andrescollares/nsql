@@ -36,22 +36,28 @@ def index(request):
 
 def add_family_uuid(member, family_uuid):
     member["family_uuid"] = family_uuid
+    member["birthday"] = datetime.strptime(member["birthday"], '%Y-%m-%d')
+    if member.get("citizenship_resignation_date"):
+      member["citizenship_resignation_date"] = datetime.strptime(member["citizenship_resignation_date"], '%y-%m-%d')
     return member
 
 @csrf_exempt
 def create_family(request):
     if request.method == "POST":
-        json_data = json.loads(request.body)
+        data = request.POST.dict()
+        members = json.loads(data["members"])
+        relations_partners = json.loads(data["relations_partners"])
+        relations_offsprings = json.loads(data["relations_offsprings"])
         family_uuid = uuid.uuid4()
-        persons = [add_family_uuid(member, family_uuid) for member in json_data["members"]]
+        persons = [add_family_uuid(member, family_uuid) for member in members]
         
         with db.transaction:
             people = Person.create(*persons)
 
-        for relation_partner in json_data["relations_partners"]:
+        for relation_partner in relations_partners:
             people[relation_partner["first"]].partner.connect(people[relation_partner["second"]], {"is_married": relation_partner["married"]})
 
-        for relation_offspring in json_data["relations_offspring"]:
+        for relation_offspring in relations_offsprings:
             people[relation_offspring["first"]].offspring.connect(people[relation_offspring["second"]])
     # TODO redirect to the algorithm run
         return HttpResponse("", status=201)

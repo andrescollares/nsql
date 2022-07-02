@@ -126,4 +126,5 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-config.DATABASE_URL = "neo4j+s://neo4j:E3VqtgpRegtjG-s-efEXpZB65YkjI7GKooNiWmUIwcI@ae2241fd.databases.neo4j.io"
+# config.DATABASE_URL = "neo4j+s://neo4j:E3VqtgpRegtjG-s-efEXpZB65YkjI7GKooNiWmUIwcI@ae2241fd.databases.neo4j.io"
+config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
