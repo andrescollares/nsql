@@ -5,8 +5,10 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
-from neomodel import db
-from .models import Person
+
+from neomodel.match import Traversal, OUTGOING, db
+
+from .models import Person, PartnerRel
 
 # Create your views here.
 
@@ -32,41 +34,26 @@ def index(request):
             text += ", " + person.name
         return HttpResponse(text)
 
+def add_family_uuid(member, family_uuid):
+    member["family_uuid"] = family_uuid
+    return member
 
 @csrf_exempt
 def create_family(request):
     if request.method == "POST":
-        data = request.POST.dict()
-        members = json.loads(data["members"])
-        relations_partners = json.loads(data["relations_partners"])
-        relations_offsprings = json.loads(data["relations_offsprings"])
-        family_number = uuid.uuid4()
-        person_id = {}
-        for person in members:
-            instance = Person(
-                name=person["name"],
-                family=family_number,
-                sex=person["sex"],
-                has_citizenship=person["has_citizenship"],
-            )
+        json_data = json.loads(request.body)
+        family_uuid = uuid.uuid4()
+        persons = [add_family_uuid(member, family_uuid) for member in json_data["members"]]
+        
+        with db.transaction:
+            people = Person.create(*persons)
 
-            birthday = person["birthday"]
-            if birthday:
-                instance.birthday = datetime.strptime(birthday, '%Y-%m-%d')
+        for relation_partner in json_data["relations_partners"]:
+            people[relation_partner["first"]].partner.connect(people[relation_partner["second"]], {"is_married": relation_partner["married"]})
 
-            citizenship_resignation_date = person.get("citizenship_resignation_date")
-            if citizenship_resignation_date:
-                instance.citizenship_resignation_date = datetime.strptime(citizenship_resignation_date, '%y-%m-%d')
-
-            instance.save()
-
-            person_id[person["id"]] = instance
-
-        for relation_partner in relations_partners:
-            person_id[relation_partner["first"]].partner.connect(person_id[relation_partner["second"]], {"is_married": relation_partner["married"]})
-
-        for relation_offspring in relations_offsprings:
-            person_id[relation_offspring["first"]].offspring.connect(person_id[relation_offspring["second"]])
+        for relation_offspring in json_data["relations_offspring"]:
+            people[relation_offspring["first"]].offspring.connect(people[relation_offspring["second"]])
+    # TODO redirect to the algorithm run
         return HttpResponse("", status=201)
 
 def get_offspring(family_uuid, name):
@@ -78,3 +65,14 @@ def get_offspring(family_uuid, name):
   results, meta = db.cypher_query(query, params)
   offspring = [Person.inflate(row[0]) for row in results]
   return offspring
+
+@csrf_exempt
+def process_family(request, family_uuid):
+    if request.method == "GET":
+        family = Person.nodes.filter(family_uuid=family_uuid)
+        # Dado que la ciudadanía se hereda desde familiares italianos
+        # filtraremos por los mismos y haremos recorridas transversales
+        italian_relatives = family.filter(has_citizenship=True)
+        for italian_relative in italian_relatives:
+            pass
+            # Hacer query que consiga a todos los descendientes de un italiano

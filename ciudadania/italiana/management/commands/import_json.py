@@ -18,7 +18,7 @@ class Command(BaseCommand):
             data = json.load(json_file)
 
             for family in data:
-                family_number = uuid.uuid4()
+                family_number = str(uuid.uuid4())
                 for person in family:
                     create_person_and_descendants(person=person, family_number=family_number)
 
@@ -51,7 +51,7 @@ def create_person(person, family_number):
 
     instance = Person(
         name=name,
-        family=family_number,
+        family_uuid=family_number,
         sex=sex,
         has_citizenship=person["has_citizenship"],
     )

@@ -15,10 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from italiana.views import index, create_family
+from italiana.views import index, create_family, process_family
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name="index"),
     path('create_family/', create_family, name="create_family"),
+    path('process_family/<str:family_uuid>/', process_family, name="process_family"),
 ]
