@@ -56,31 +56,22 @@ def create_random_family():
   return family
 
 class QuickstartUser(HttpUser):
-    host = "http://localhost:8000"
+    host = "http://localhost:8000/"
     wait_time = between(1, 2)
+    family = {}
+    
+    def on_start(self):
+      self.family = create_random_family()
 
-    # def on_start(self):
-    #   base_path = os.path.abspath(os.getcwd())
-    #   file_path = str(base_path) + "/test_families.json"
-    #   with open(file_path) as json_file:
-    #       data = json.load(json_file)
-    #       random_index = randint(0,len(data)-1)
-    #       family = data[random_index]
-    #       self.client.post("/create", family)
+    @task
+    def generate_family(self):
+      self.family = create_random_family()
 
     @task
     def create_family(self):
-        # bolo = json.loads('{"name": "bolo"}')
-        family = create_random_family()
-        with self.client.post("/create_family/",data=family, catch_response=True) as response:
+        with self.client.post("create_family/",data=self.family, catch_response=True) as response:
             if response.status_code == 201:
                 response.success()
-        self.client.get("")
-
-    # @task(3)
-    # def view_item(self):
-    #     for item_id in range(10):
-    #         self.client.get(f"/item?id={item_id}", name="/item")
 
 if __name__ == "__main__":
     run_single_user(QuickstartUser)
