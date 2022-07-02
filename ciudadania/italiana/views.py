@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
-
+from neomodel import db
 from .models import Person
 
 # Create your views here.
@@ -23,7 +23,14 @@ def index(request):
         else:
             return HttpResponse("", status=404)
     else:
-        return HttpResponse("<h1>Welcome to TechVidvan Employee Portal</h1>")
+        offspring = get_offspring("d1b44fb3-e415-458d-a8bf-edff17669cf9", "Jonathan Farley")
+        text= ""
+        for person in offspring:
+          if text=="":  
+            text = person.name
+          else:
+            text += ", " + person.name
+        return HttpResponse(text)
 
 
 @csrf_exempt
@@ -61,3 +68,13 @@ def create_family(request):
         for relation_offspring in relations_offsprings:
             person_id[relation_offspring["first"]].offspring.connect(person_id[relation_offspring["second"]])
         return HttpResponse("", status=201)
+
+def get_offspring(family_uuid, name):
+  query = (
+    'MATCH ((p1:Person{family_uuid:$family_uuid, name:$name}) - [:OFFSPRING*1..] -> (p2:Person{family_uuid:$family_uuid}))'
+    'RETURN p2'
+  )
+  params = {"family_uuid": family_uuid, "name": name}
+  results, meta = db.cypher_query(query, params)
+  offspring = [Person.inflate(row[0]) for row in results]
+  return offspring
