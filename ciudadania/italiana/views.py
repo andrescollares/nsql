@@ -78,73 +78,67 @@ def get_offspring(family_uuid, name):
 
 
 def possible_citizenship(person, could_get_citizenship):
-    if(person.has_citizenship or could_get_citizenship.get(person.id)):
-        definition = dict(node_class=Person, direction=OUTGOING,relation_type="OFFSPRING", model=None)
-        relations_traversal = Traversal(person, Person.__label__,definition)
-        offspring = relations_traversal.all()
+    if(person.has_citizenship or could_get_citizenship.get(person.id) or person.citizenship_resignation_date):
+        #corresponde la ciudadanía hacía los hijos ?
+        if person.date_of_death and person.date_of_death < date(1861,1,1):
+            return could_get_citizenship
+        if person.sex == "FEMALE" and person.date_of_death and person.date_of_death < date(1948,1,1):
+            return could_get_citizenship
+        offspring = person.offspring.all()
         for member in offspring:
-            if not could_get_citizenship.get(member.id):
-                could_get_citizenship[member.id] = member
-            possible_citizenship(member, could_get_citizenship)
+            if person.citizenship_resignation_date == None or (person.citizenship_resignation_date and member.birthday < person.citizenship_resignation_date):    
+                if not could_get_citizenship.get(member.id):
+                    could_get_citizenship[member.id] = member
+                could_get_citizenship = possible_citizenship(member, could_get_citizenship)
     return could_get_citizenship
 
 @csrf_exempt
 def process_family(request, family_uuid):
     if request.method == "GET":
         family = Person.nodes.filter(family_uuid=family_uuid)
-        # Dado que la ciudadanía se hereda desde familiares italianos
-        # filtraremos por los mismos y haremos recorridas transversales
-        # could_get_citizenship = dict()
-        # italian_relatives = family.filter(has_citizenship=True)
-        # for italian_relative in italian_relatives:
-        #     could_get_citizenship = possible_citizenship(italian_relative, could_get_citizenship)
-        # text= ""
-        # for person in could_get_citizenship.values():
-        #   if text=="":  
-        #     text = person.name
-        #   else:
-        #     text += ", " + person.name
-        # return HttpResponse(text)
-        #     pass
-        #     # Hacer query que consiga a todos los descendientes de un italiano
-        # Get all starting nodes
+        could_get_citizenship = dict()
+        italian_relatives = family.filter(has_citizenship=True)
+        for italian_relative in italian_relatives:
+            could_get_citizenship = possible_citizenship(italian_relative, could_get_citizenship)
+        citizenship_ids = {}
+        for person in could_get_citizenship.values():
+            citizenship_ids[person.id] = True
         query = "MATCH (p1:Person {family_uuid:$family_uuid}) WHERE not (p1) <-- () RETURN p1"
         params = {"family_uuid": family_uuid}
         results, meta = db.cypher_query(query, params)
         first_nodes = [Person.inflate(row[0]) for row in results]
 
-        data = tree_data(first_nodes)
-
+        data = tree_data(first_nodes, citizenship_ids)
         context = {"familyUUID": family_uuid, "treeData": data}
         return render(request, template_name="italiana/tree.html", context=context)
 
 
-def tree_data(nodes):
+def tree_data(nodes, citizenship_ids):
     data = []
 
     for node in nodes:
-        person_json = person_to_json(node)
+        person_json = person_to_json(node, citizenship_ids)
 
         partners = node.partner.all()
         if partners:
-            person_json["marriages"] = [partner_to_json(partner) for partner in partners]
+            person_json["marriages"] = [partner_to_json(partner, citizenship_ids) for partner in partners]
 
         data.append(person_json)
 
     return data
 
 
-def person_to_json(person):
+def person_to_json(person, citizenship_ids):
     person_json = {}
     person_json["name"] = person.name
     person_json["class"] = person.sex
 
-    person_json["extra"] = person_extra_info(person)
+    person_json["extra"] = person_extra_info(person, citizenship_ids)
 
     return person_json
 
 
-def person_extra_info(person):
+def person_extra_info(person, citizenship_ids):
     extra = {}
 
     if person.birthday:
@@ -160,20 +154,23 @@ def person_extra_info(person):
     extra["nacionalidades"] = []
     if person.has_citizenship:
         extra["nacionalidades"].append("it.gif")
+        extra["ciudadania_disponible"] = "true"
+    elif citizenship_ids.get(person.id):
+        extra["ciudadania_disponible"] = "true"
 
     return extra
 
 
-def partner_to_json(partner):
+def partner_to_json(partner, citizenship_ids):
     spouse = {}
 
     spouse["name"] = partner.name
     spouse["class"] = partner.sex
-    spouse["extra"] = person_extra_info(partner)
+    spouse["extra"] = person_extra_info(partner, citizenship_ids)
 
     offspring = partner.offspring.all()
     if offspring:
-        return {"spouse": spouse, "children": tree_data(offspring), "extra": {}}
+        return {"spouse": spouse, "children": tree_data(offspring, citizenship_ids), "extra": {}}
 
     return {"spouse": spouse, "extra": {}}
 
