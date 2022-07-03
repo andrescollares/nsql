@@ -1,19 +1,14 @@
 html {
   background-color: #ffffff;
 }
-body {
-  margin: 0;
-  padding: 0px 8px;
-  min-width: 100%;
-}
 g * {
   font-size: 9px;
 }
 h1 {
   font-family: "Montserrat", sans-serif;
   text-align: center;
-  margin: 0.6em auto;
-  font-size: 48px;
+  margin: 0.4em auto;
+  font-size: 32px;
   font-weight: 400;
 }
 .title {
@@ -128,37 +123,6 @@ span {
 }
 span:not(:last-child) {
   margin-bottom: 2px;
-}
-
-.fa-heart {
-  color: darkred;
-}
-
-.fa-heartbeat {
-  color: rosybrown;
-}
-
-.fa-ring {
-  color: goldenrod;
-}
-
-.fa-heart-broken {
-  color: dimgrey;
-}
-
-.fa-question-circle {
-  color: dimgrey;
-}
-
-.fa-question {
-  color: dimgrey;
-}
-
-.fa-baby {
-  color: dimgrey;
-}
-.fa-cross {
-  color: dimgrey;
 }
 .flag-container {
   position: absolute;

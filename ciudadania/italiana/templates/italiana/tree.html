@@ -27,8 +27,8 @@
         debug: true,
         hideMarriageNodes: false,
         marriageNodeSize: 25,
-        width: 1000,
-        height: 1000,
+        width: 1200,
+        height: 550,
         callbacks: {
           nodeClick: function(name, extra) {
             console.log(name);
@@ -88,22 +88,7 @@
             return node;
           },
         },
-        margin: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0
-        },
       });
-      var tree_g = document.querySelector('g');
-      width = tree_g.getBoundingClientRect().width
-      height = tree_g.getBoundingClientRect().height
-      container = document.querySelector('#graph');
-      container.setAttribute("style", "width: " + width + "px; height: " + height + "px");
-      svg = document.querySelector('svg').setAttribute("viewBox", "0 0 " + width + " " + height);
-      title = document.querySelector('.title').setAttribute("style", "width: " + width + "px;");
-      body = document.querySelector('body').setAttribute("style", "width: " + (width + 16) + "px;");
-      tree.zoomToFit(duration = 0);
     </script>
   </body>
 </html>
