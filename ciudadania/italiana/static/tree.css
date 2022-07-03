@@ -1,0 +1,176 @@
+html {
+  background-color: #ffffff;
+}
+body {
+  margin: 0;
+  padding: 0px 8px;
+  min-width: 100%;
+}
+g * {
+  font-size: 9px;
+}
+h1 {
+  font-family: "Montserrat", sans-serif;
+  text-align: center;
+  margin: 0.6em auto;
+  font-size: 48px;
+  font-weight: 400;
+}
+.title {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+a {
+  box-shadow: 0px 0px 5px rgba(10, 10, 10, 0.2);
+  transition: background-color 0.25s ease-out, color 0.25s ease-out;
+  padding: 0.35em 0.45em;
+  line-height: 1;
+  background-color: #1779ba;
+  color: #fefefe;
+  vertical-align: middle;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+a:hover {
+  background-color: #126195;
+  color: #fefefe;
+}
+div {
+  overflow: hidden;
+}
+#graph {
+  text-align: center;
+  margin: 0 auto 8px auto;
+  box-shadow: 0px 0px 20px rgba(10, 10, 10, 0.2);
+}
+svg {
+  background-color: white;
+}
+.txt-container {
+  height: 36px;
+  display: flex;
+  align-content: center;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.2rem 0.5rem 0.2rem;
+}
+.txt-container p {
+  font-family: "Montserrat", sans-serif;
+  font-size: 9px;
+}
+.linage {
+  fill: none;
+  stroke: gray;
+}
+.marriage {
+  fill: none;
+  stroke: salmon;
+}
+.marriageNode {
+  background-color: white;
+  border-radius: 50%;
+  border-style: solid;
+  border-width: 1px;
+  border-color: gray;
+  box-sizing: border-box;
+}
+.marriageNode * {
+  font-size: 16px;
+}
+
+.MALE {
+  background-color: white;
+  border-style: solid;
+  border-width: 1px;
+  border-color: gray;
+  box-sizing: border-box;
+  border-radius: 5px;
+  display: inline-table;
+}
+.FEMALE {
+  background-color: white;
+  border-style: solid;
+  border-width: 1px;
+  border-color: gray;
+  box-sizing: border-box;
+  border-radius: 5px;
+  display: inline-table;
+}
+.OTHER {
+  background-color: white;
+  border-style: solid;
+  border-width: 1px;
+  border-color: gray;
+  box-sizing: border-box;
+  border-radius: 5px;
+  display: inline-table;
+}
+.perfil {
+  object-fit: cover;
+  width: 100%;
+  border-bottom: solid 1px gray;
+}
+p {
+  margin: 0;
+  max-width: 88px;
+}
+
+span {
+  display: block;
+  overflow: hidden;
+  max-height: 22px;
+  text-overflow: ellipsis;
+}
+span:not(:last-child) {
+  margin-bottom: 2px;
+}
+
+.fa-heart {
+  color: darkred;
+}
+
+.fa-heartbeat {
+  color: rosybrown;
+}
+
+.fa-ring {
+  color: goldenrod;
+}
+
+.fa-heart-broken {
+  color: dimgrey;
+}
+
+.fa-question-circle {
+  color: dimgrey;
+}
+
+.fa-question {
+  color: dimgrey;
+}
+
+.fa-baby {
+  color: dimgrey;
+}
+.fa-cross {
+  color: dimgrey;
+}
+.flag-container {
+  position: absolute;
+  top: 73px;
+  right: 2px;
+  padding: 2px 2px 0 2px;
+}
+.flag {
+  width: 12px;
+  height: 8px;
+  box-shadow: 1px 1px 1px slategrey;
+}
+.flag:not(:last-child) {
+  margin-right: 2px;
+}
