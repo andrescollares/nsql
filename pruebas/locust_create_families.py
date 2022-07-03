@@ -59,12 +59,9 @@ class QuickstartUser(HttpUser):
     host = "http://localhost:8000/"
     wait_time = between(1, 2)
     family = {}
-    family_uuid = ""
     
     def on_start(self):
       self.family = create_random_family()
-      # grab uuid from families.json
-      self.family_uuid = "45876d60-9535-42fb-8739-87f5e46572cf"
 
     @task
     def generate_family(self):
@@ -74,12 +71,6 @@ class QuickstartUser(HttpUser):
     def create_family(self):
         with self.client.post("create_family/",data=self.family, catch_response=True) as response:
             if response.status_code == 201:
-                response.success()
-    
-    @task
-    def check_family(self):
-        with self.client.get(f"process_family/{self.family_uuid}/", catch_response=True) as response:
-            if response.status_code == 200:
                 response.success()
 
 if __name__ == "__main__":
