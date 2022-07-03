@@ -26,22 +26,20 @@ def index(request):
             return HttpResponse("", status=404)
     else:
         offspring = get_offspring("d1b44fb3-e415-458d-a8bf-edff17669cf9", "Jonathan Farley")
-        text = ""
+        text= ""
         for person in offspring:
-            if text == "":
-                text = person.name
-            else:
-                text += ", " + person.name
+          if text=="":  
+            text = person.name
+          else:
+            text += ", " + person.name
         return HttpResponse(text)
-
 
 def add_family_uuid(member, family_uuid):
     member["family_uuid"] = family_uuid
-    member["birthday"] = datetime.strptime(member["birthday"], "%Y-%m-%d")
+    member["birthday"] = datetime.strptime(member["birthday"], '%Y-%m-%d')
     if member.get("citizenship_resignation_date"):
-        member["citizenship_resignation_date"] = datetime.strptime(member["citizenship_resignation_date"], "%y-%m-%d")
+      member["citizenship_resignation_date"] = datetime.strptime(member["citizenship_resignation_date"], '%y-%m-%d')
     return member
-
 
 @csrf_exempt
 def create_family(request):
@@ -52,7 +50,7 @@ def create_family(request):
         relations_offsprings = json.loads(data["relations_offsprings"])
         family_uuid = uuid.uuid4()
         persons = [add_family_uuid(member, family_uuid) for member in members]
-
+        
         with db.transaction:
             people = Person.create(*persons)
 
@@ -61,17 +59,18 @@ def create_family(request):
 
         for relation_offspring in relations_offsprings:
             people[relation_offspring["first"]].offspring.connect(people[relation_offspring["second"]])
-        # TODO redirect to the algorithm run
+    # TODO redirect to the algorithm run
         return HttpResponse("", status=201)
 
-
 def get_offspring(family_uuid, name):
-    query = "MATCH ((p1:Person{family_uuid:$family_uuid, name:$name}) - [:OFFSPRING*1..] -> (p2:Person{family_uuid:$family_uuid})) RETURN p2"
-    params = {"family_uuid": family_uuid, "name": name}
-    results, meta = db.cypher_query(query, params)
-    offspring = [Person.inflate(row[0]) for row in results]
-    return offspring
-
+  query = (
+    'MATCH ((p1:Person{family_uuid:$family_uuid, name:$name}) - [:OFFSPRING*1..] -> (p2:Person{family_uuid:$family_uuid}))'
+    'RETURN p2'
+  )
+  params = {"family_uuid": family_uuid, "name": name}
+  results, meta = db.cypher_query(query, params)
+  offspring = [Person.inflate(row[0]) for row in results]
+  return offspring
 
 @csrf_exempt
 def process_family(request, family_uuid):
@@ -84,54 +83,63 @@ def process_family(request, family_uuid):
             pass
             # Hacer query que consiga a todos los descendientes de un italiano
 
-        # Get all starting nodes
-        query = "MATCH (p1:Person {family_uuid:$family_uuid}) WHERE not (p1) <-- () RETURN p1"
-        params = {"family_uuid": family_uuid}
-        results, meta = db.cypher_query(query, params)
-        first_nodes = [Person.inflate(row[0]) for row in results]
-
-        data = tree_data(first_nodes)
-
-        context = {"familyUUID": family_uuid, "treeData": data}
-        return render(request, template_name="italiana/tree.html", context=context)
-
+        context = {"familyUUID": family_uuid, "treeData":familia_a_json(family)}
+        return render(request, template_name="tree.html", context=context)
 
 # Código de gestari para generar el json a pasarle a la libreria que genera el árbol
-def tree_data(nodes):
-    data = []
+def familia_a_json(family):
+    person_tree = {}
 
-    for node in nodes:
-        person_json = person_to_json(node)
+    # if familia in familiar.familias.all():
+    person_tree["name"] = person.name
+    person_tree["class"] = person.sex
 
-        partners = node.partner.all()
-        if partners:
-            person_json["marriages"] = [partner_to_json(partner) for partner in partners]
+    person_tree["extra"] = familiar_extra(person)
 
-        data.append(person_json)
+    parejas = familiar.get_parejas()
 
-    return data
+    if parejas:
+        person_tree["marriages"] = [pareja_a_json(pareja, familiar, familia) for pareja in parejas]
 
-
-def person_to_json(person):
-    person_json = {}
-    person_json["name"] = person.name
-    person_json["class"] = person.sex
-
-    person_json["extra"] = person_extra_info(person)
-
-    return person_json
+    return person_tree
 
 
-def person_extra_info(person):
+def pareja_a_json(pareja, familiar, familia):
+    spouse = {}
+
+    if pareja.primer_integrante == familiar:
+        pareja_fam = pareja.segundo_integrante
+    else:
+        pareja_fam = pareja.primer_integrante
+
+    icon = pareja.get_icono_estado
+    if icon == "question-circle":
+        icon = "question"
+
+    if familia in pareja_fam.familias.all():
+        spouse["name"] = pareja_fam.nombre + " " + pareja_fam.apellido
+        spouse["class"] = pareja_fam.sexo or "OTHER"
+        spouse["extra"] = familiar_extra(pareja_fam)
+
+        if pareja.hijos.all():
+            children = [familia_a_json(hijo, familia) for hijo in pareja.hijos.all() if familia in hijo.familias.all()]
+            return {"spouse": spouse, "children": children, "extra": {"icon": icon}}
+
+        return {"spouse": spouse, "extra": {"icon": icon}}
+
+    return spouse
+
+
+def familiar_extra(person):
     extra = {}
 
     if person.birthday:
-        extra["nacimiento"] = person.birthday.year
+        extra["nacimiento"] = person.birthday
     else:
         extra["nacimiento"] = "?"
 
     if person.date_of_death:
-        extra["defuncion"] = person.date_of_death.year
+        extra["defuncion"] = person.date_of_death
     else:
         extra["defuncion"] = ""
 
@@ -140,18 +148,3 @@ def person_extra_info(person):
         extra["nacionalidades"].append("it.gif")
 
     return extra
-
-
-def partner_to_json(partner):
-    spouse = {}
-
-    spouse["name"] = partner.name
-    spouse["class"] = partner.sex
-    spouse["extra"] = person_extra_info(partner)
-
-    offspring = partner.offspring.all()
-    if offspring:
-        return {"spouse": spouse, "children": [person_to_json(child) for child in offspring], "extra": {}}
-
-    return {"spouse": spouse, "extra": {}}
-
