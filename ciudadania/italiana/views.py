@@ -173,7 +173,7 @@ def partner_to_json(partner):
 
     offspring = partner.offspring.all()
     if offspring:
-        return {"spouse": spouse, "children": [person_to_json(child) for child in offspring], "extra": {}}
+        return {"spouse": spouse, "children": tree_data(offspring), "extra": {}}
 
     return {"spouse": spouse, "extra": {}}
 
