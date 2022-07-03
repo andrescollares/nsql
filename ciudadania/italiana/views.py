@@ -61,7 +61,7 @@ def create_family(request):
 
         for relation_offspring in relations_offsprings:
             people[relation_offspring["first"]].offspring.connect(people[relation_offspring["second"]])
-        # TODO redirect to the algorithm run
+        # TODO redirect to the other view
         return HttpResponse("", status=201)
 
 
@@ -96,7 +96,6 @@ def process_family(request, family_uuid):
         return render(request, template_name="italiana/tree.html", context=context)
 
 
-# Código de gestari para generar el json a pasarle a la libreria que genera el árbol
 def tree_data(nodes):
     data = []
 
