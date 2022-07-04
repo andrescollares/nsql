@@ -52,6 +52,97 @@ def create_family(request):
         people[relation["first"]].offspring.connect(people[relation["second"]])
     return HttpResponse(family_uuid, status=201)
 
+def possible_citizenship(person, could_get_citizenship):
+    if person.has_citizenship or could_get_citizenship.get(person.id) or person.citizenship_resignation_date:
+        # corresponde la ciudadanía hacía los hijos ?
+        if person.date_of_death and person.date_of_death < date(1861, 1, 1):
+            return could_get_citizenship
+        if could_get_citizenship.get(person.id):
+            administrative = could_get_citizenship.get(person.id)["administrative"]
+        elif person.sex == "FEMALE" and person.date_of_death and person.date_of_death < date(1948, 1, 1):
+            administrative = False
+        else:
+            administrative = True
+        offspring = person.offspring.all()
+        for member in offspring:
+            if person.citizenship_resignation_date == None or (
+                person.citizenship_resignation_date and member.birthday < person.citizenship_resignation_date
+            ):
+                if not could_get_citizenship.get(member.id):
+                    could_get_citizenship[member.id] = {"member": member.id, "administrative": administrative}
+                could_get_citizenship = possible_citizenship(member, could_get_citizenship)
+    return could_get_citizenship
+
+def tree_data_beta(nodes, citizenship_ids):
+    data = []
+
+    for node in nodes:
+        person_json = person_to_json_beta(node, citizenship_ids)
+
+        partners = node.partner.all()
+        if partners:
+            person_json["marriages"] = [partner_to_json_beta(partner, citizenship_ids) for partner in partners]
+
+        data.append(person_json)
+
+    return data
+
+
+def person_to_json_beta(person, citizenship_ids):
+    person_json = {}
+    person_json["name"] = person.name
+    person_json["class"] = person.sex
+
+    person_json["extra"] = person_extra_info_beta(person, citizenship_ids)
+
+    return person_json
+
+
+def person_extra_info_beta(person, citizenship_ids):
+    extra = {}
+    extra["nacimiento"] = person.birthday.year if person.birthday else "?"
+    extra["defuncion"] = person.date_of_death.year if person.date_of_death else ""
+
+    extra["nacionalidades"] = []
+    if person.has_citizenship:
+        extra["nacionalidades"].append("it.gif")
+        extra["ciudadano"] = "true"
+    else:
+        if citizenship_ids.get(person.id) and citizenship_ids.get(person.id)["administrative"]:
+            extra["ciudadania_admin"] = "true"
+        elif citizenship_ids.get(person.id):
+            extra["ciudadania_juicio"] = "true"
+
+    return extra
+
+
+def partner_to_json_beta(partner, citizenship_ids):
+    spouse = {}
+    spouse["name"] = partner.name
+    spouse["class"] = partner.sex
+    spouse["extra"] = person_extra_info_beta(partner, citizenship_ids)
+
+    offspring = partner.offspring.all()
+    if offspring:
+        return {"spouse": spouse, "children": tree_data_beta(offspring, citizenship_ids), "extra": {}}
+    return {"spouse": spouse, "extra": {}}
+
+@csrf_exempt
+@require_GET
+def process_family_beta(request, family_uuid):
+    family = Person.nodes.filter(family_uuid=family_uuid)
+    could_get_citizenship = dict()
+    italian_relatives = family.filter(has_citizenship=True)
+    for italian_relative in italian_relatives:
+        could_get_citizenship = possible_citizenship(italian_relative, could_get_citizenship)
+    query = "MATCH (p1:Person {family_uuid:$family_uuid}) WHERE not (p1) <-- () RETURN p1"
+    params = {"family_uuid": family_uuid}
+    results, meta = db.cypher_query(query, params)
+    first_nodes = [Person.inflate(row[0]) for row in results]
+
+    data = tree_data_beta(first_nodes, could_get_citizenship)
+    context = {"familyUUID": family_uuid, "treeData": data}
+    return render(request, template_name="italiana/tree.html", context=context)
 
 @csrf_exempt
 @require_GET
