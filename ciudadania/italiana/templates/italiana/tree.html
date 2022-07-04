@@ -43,7 +43,7 @@
             // This callback is optinal but can be used to customize
             // how the text is rendered without having to rewrite the entire node
             // from screatch.
-            return "<p align='center' class='" + textClass + "' style='word-wrap:break-word; '><span>" + name + "</span><span>" + extra.nacimiento + ((extra.defuncion === "") ? "" : " - ") + extra.defuncion + ((extra.defuncion === "") ? "" : "") + "</span></p>";
+            return "<p align='center' class='" + textClass + "' style='word-wrap:break-word; '><span>" + name + "</span><span>🎂" + extra.nacimiento + ((extra.defuncion === "") ? "" : " - ⚰️") + extra.defuncion + ((extra.defuncion === "") ? "" : "") + "</span></p>";
           },
           nodeSize: function (nodes, width, textRenderer) {
             _.map(nodes, function (n) {
