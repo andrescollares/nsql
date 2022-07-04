@@ -14,8 +14,6 @@ import os
 
 from pathlib import Path
 
-from neomodel import config
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -133,5 +131,5 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# config.DATABASE_URL = "neo4j+s://neo4j:E3VqtgpRegtjG-s-efEXpZB65YkjI7GKooNiWmUIwcI@ae2241fd.databases.neo4j.io"
-config.DATABASE_URL = "bolt://neo4j:acafsqwe@localhost:7687"
+NEOMODEL_NEO4J_BOLT_URL = "bolt://neo4j:acafsqwe@localhost:7687"
+NEOMODEL_MAX_CONNECTION_POOL_SIZE = 50

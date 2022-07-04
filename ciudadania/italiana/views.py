@@ -69,7 +69,11 @@ def process_family(request, family_uuid):
 def value_citizenship(person, parent_rel, citizenship_state):
     if citizenship_state == "NO":
         for parent in [parent_rel.start_node(), parent_rel.end_node()]:
-            if parent.citizenship_resignation_date and (person.birthday < parent.citizenship_resignation_date or person.birthay > date(1992, 1, 1)):
+            if (
+                (parent.citizenship_resignation_date and (person.birthday < parent.citizenship_resignation_date or person.birthay > date(1992, 1, 1)))
+                or parent.has_citizenship
+                and not (person.date_of_death and person.date_of_death < date(1861, 1, 1) or person.citizenship_resignation_date)
+            ):
                 # Caso 3
                 return "ADMIN"
         return "NO"
@@ -122,6 +126,8 @@ def person_extra_info(person, citizenship_state):
     extra = {}
     extra["nacimiento"] = person.birthday.year if person.birthday else "?"
     extra["defuncion"] = person.date_of_death.year if person.date_of_death else ""
+
+    extra["citizenship_resignation_date"] = person.citizenship_resignation_date if person.citizenship_resignation_date else "No renunció"
 
     extra["nacionalidades"] = []
     if person.has_citizenship:
