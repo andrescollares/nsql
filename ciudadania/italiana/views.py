@@ -156,4 +156,4 @@ def partner_to_json(partner_rel, citizenship_state):
     offspring = spouse_instance.offspring.all()
     if offspring:
         return {"spouse": spouse, "children": tree_data(offspring, partner_rel, citizenship_state), "extra": {"icon": icon}}
-    return {"spouse": spouse, "extra": {}}
+    return {"spouse": spouse, "extra": {"icon": icon}}

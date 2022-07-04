@@ -1,9 +1,8 @@
 import json
 import names
 import datetime
-import uuid
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from italiana.models import Person
 
 
@@ -18,16 +17,15 @@ class Command(BaseCommand):
             data = json.load(json_file)
 
             for family in data:
-                family_number = str(uuid.uuid4())
                 for person in family:
-                    create_person_and_descendants(person=person, family_number=family_number)
+                    create_person_and_descendants(person=person)
 
 
         self.stdout.write(self.style.SUCCESS("Import successful"))
 
 
-def create_person_and_descendants(person, family_number, parents=[]):
-    instance = create_person(person, family_number)
+def create_person_and_descendants(person, parents=[]):
+    instance = create_person(person)
 
     for parent in parents:
         parent.offspring.connect(instance)
@@ -35,15 +33,15 @@ def create_person_and_descendants(person, family_number, parents=[]):
     for partner in person["partners"]:
 
         is_married = partner.pop("is_married", False)
-        partner_instance = create_person(partner, family_number=family_number)
+        partner_instance = create_person(partner)
         instance.partner.connect(partner_instance, {"is_married": is_married})
 
         children = partner["offspring"]
         parents = [instance, partner_instance]
-        create_offspring_instances(parents=parents, family_number=family_number, children=children)
+        create_offspring_instances(parents=parents, children=children)
 
 
-def create_person(person, family_number):
+def create_person(person):
     sex = person["sex"]
     if not sex:
         sex = "OTHER"
@@ -51,7 +49,7 @@ def create_person(person, family_number):
 
     instance = Person(
         name=name,
-        family_uuid=family_number,
+        family_uuid=person["family_uuid"],
         sex=sex,
         has_citizenship=person["has_citizenship"],
     )
@@ -70,6 +68,6 @@ def create_person(person, family_number):
     return instance
 
 
-def create_offspring_instances(parents, family_number, children):
+def create_offspring_instances(parents, children):
     for child in children:
-        create_person_and_descendants(person=child, parents=parents, family_number=family_number)
+        create_person_and_descendants(person=child, parents=parents)
