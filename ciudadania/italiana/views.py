@@ -66,9 +66,9 @@ def process_family(request, family_uuid):
     return render(request, template_name="italiana/tree.html", context=context)
 
 
-def value_citizenship(person, parents, citizenship_state):
+def value_citizenship(person, parent_rel, citizenship_state):
     if citizenship_state == "NO":
-        for parent in parents:
+        for parent in [parent_rel.start_node(), parent_rel.end_node()]:
             if parent.citizenship_resignation_date and (person.birthday < parent.citizenship_resignation_date or person.birthay > date(1992, 1, 1)):
                 # Caso 3
                 return "ADMIN"
@@ -91,16 +91,17 @@ def value_citizenship(person, parents, citizenship_state):
             return citizenship_state
 
 
-def tree_data(nodes, parents, citizenship_state):
+def tree_data(nodes, parent_rel, citizenship_state):
     data = []
 
     for node in nodes:
-        citizenship_state = value_citizenship(node, parents, citizenship_state)
+        citizenship_state = value_citizenship(node, parent_rel, citizenship_state)
         person_json = person_to_json(node, citizenship_state)
 
         partners = node.partner.all()
-        if partners:
-            person_json["marriages"] = [partner_to_json(node, partner, citizenship_state) for partner in partners]
+        partners_rels = [node.partner.relationship(partner) for partner in partners]
+        if partners_rels:
+            person_json["marriages"] = [partner_to_json(partner_rel, citizenship_state) for partner_rel in partners_rels]
 
         data.append(person_json)
 
@@ -135,13 +136,18 @@ def person_extra_info(person, citizenship_state):
     return extra
 
 
-def partner_to_json(person, partner, citizenship_state):
+def partner_to_json(partner_rel, citizenship_state):
+    spouse_instance = partner_rel.end_node()
     spouse = {}
-    spouse["name"] = partner.name
-    spouse["class"] = partner.sex
-    spouse["extra"] = person_extra_info(partner, citizenship_state)
+    spouse["name"] = spouse_instance.name
+    spouse["class"] = spouse_instance.sex
+    spouse["extra"] = person_extra_info(spouse_instance, citizenship_state if partner_rel.is_married else "NO")
+    if partner_rel.is_married:
+        icon = "💍"
+    else:
+        icon = "❔"
 
-    offspring = partner.offspring.all()
+    offspring = spouse_instance.offspring.all()
     if offspring:
-        return {"spouse": spouse, "children": tree_data(offspring, [person, partner], citizenship_state), "extra": {}}
+        return {"spouse": spouse, "children": tree_data(offspring, partner_rel, citizenship_state), "extra": {"icon": icon}}
     return {"spouse": spouse, "extra": {}}
