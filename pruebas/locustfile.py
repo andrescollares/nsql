@@ -4,7 +4,6 @@ from random import randint, random, randrange
 from names import get_full_name
 from datetime import timedelta, date
 import os
-from family_uuids import FAMILY_UUIDS
 
 def get_random_date(start_date, end_date):
   time_between_dates = end_date - start_date
@@ -107,14 +106,20 @@ class QueryUser(HttpUser):
     wait_time = between(1, 2)
     family = {}
     weight = 8
+    family_uuids = []
+    family_uuid = ""
+
     def on_start(self):
-        familiy_index = randint(0, len(FAMILY_UUIDS)-1)
-        self.family_uuid = FAMILY_UUIDS[familiy_index]
+        with self.client.get("", catch_response=True) as response:
+            if response.status_code == 200:
+                self.family_uuids = response.json()
+                familiy_index = randint(0, len(self.family_uuids)-1)
+                self.family_uuid = self.family_uuids[familiy_index]
 
     @task
     def get_new_family_uuid(self):
-        familiy_index = randint(0, len(FAMILY_UUIDS)-1)
-        self.family_uuid = FAMILY_UUIDS[familiy_index]
+        familiy_index = randint(0, len(self.family_uuids)-1)
+        self.family_uuid = self.family_uuids[familiy_index]
 
     @task
     def check_family(self):
