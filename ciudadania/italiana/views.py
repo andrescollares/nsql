@@ -53,79 +53,71 @@ def create_family(request):
     return HttpResponse(family_uuid, status=201)
 
 
-def get_offspring(family_uuid, name):
-    query = "MATCH ((p1:Person{family_uuid:$family_uuid, name:$name}) - [:OFFSPRING*1..] -> (p2:Person{family_uuid:$family_uuid})) RETURN p2"
-    params = {"family_uuid": family_uuid, "name": name}
-    results, meta = db.cypher_query(query, params)
-    offspring = [Person.inflate(row[0]) for row in results]
-    return offspring
-
-
-def possible_citizenship(person, could_get_citizenship):
-    if person.has_citizenship or could_get_citizenship.get(person.id) or person.citizenship_resignation_date:
-        # corresponde la ciudadanía hacía los hijos ?
-        if person.date_of_death and person.date_of_death < date(1861, 1, 1):
-            return could_get_citizenship
-        if person.sex == "FEMALE" and person.date_of_death and person.date_of_death < date(1948, 1, 1):
-            return could_get_citizenship
-        offspring = person.offspring.all()
-        for member in offspring:
-            if person.citizenship_resignation_date == None or (
-                person.citizenship_resignation_date and member.birthday < person.citizenship_resignation_date
-            ):
-                if not could_get_citizenship.get(member.id):
-                    could_get_citizenship[member.id] = member
-                could_get_citizenship = possible_citizenship(member, could_get_citizenship)
-    return could_get_citizenship
-
-
 @csrf_exempt
 @require_GET
 def process_family(request, family_uuid):
-    family = Person.nodes.filter(family_uuid=family_uuid)
-    could_get_citizenship = dict()
-    italian_relatives = family.filter(has_citizenship=True)
-    for italian_relative in italian_relatives:
-        could_get_citizenship = possible_citizenship(italian_relative, could_get_citizenship)
-    citizenship_ids = {}
-    for person in could_get_citizenship.values():
-        citizenship_ids[person.id] = True
     query = "MATCH (p1:Person {family_uuid:$family_uuid}) WHERE not (p1) <-- () RETURN p1"
     params = {"family_uuid": family_uuid}
     results, meta = db.cypher_query(query, params)
     first_nodes = [Person.inflate(row[0]) for row in results]
 
-    data = tree_data(first_nodes, citizenship_ids)
+    data = tree_data(first_nodes, [], "")
     context = {"familyUUID": family_uuid, "treeData": data}
     return render(request, template_name="italiana/tree.html", context=context)
 
 
-def tree_data(nodes, citizenship_ids):
+def value_citizenship(person, parents, citizenship_state):
+    if citizenship_state == "NO":
+        for parent in parents:
+            if parent.citizenship_resignation_date and (person.birthday < parent.citizenship_resignation_date or person.birthay > date(1992, 1, 1)):
+                # Caso 3
+                return "ADMIN"
+        return "NO"
+    else:
+        if person.has_citizenship:
+            if person.date_of_death and person.date_of_death < date(1861, 1, 1) or person.citizenship_resignation_date:
+                # Caso 1 y 2
+                return "NO"
+            elif person.sex == "FEMALE" and person.date_of_death and person.date_of_death < date(1948, 1, 1):
+                # Caso 6
+                return "TRIAL"
+            else:
+                return "ADMIN"
+        elif person.citizenship_resignation_date:
+            # Caso 5
+            return "NO"
+        else:
+            # Se continua con el mismo estado
+            return citizenship_state
+
+
+def tree_data(nodes, parents, citizenship_state):
     data = []
 
     for node in nodes:
-        person_json = person_to_json(node, citizenship_ids)
+        citizenship_state = value_citizenship(node, parents, citizenship_state)
+        person_json = person_to_json(node, citizenship_state)
 
         partners = node.partner.all()
         if partners:
-            person_json["marriages"] = [partner_to_json(partner, citizenship_ids) for partner in partners]
+            person_json["marriages"] = [partner_to_json(node, partner, citizenship_state) for partner in partners]
 
         data.append(person_json)
 
     return data
 
 
-def person_to_json(person, citizenship_ids):
+def person_to_json(person, citizenship_state):
     person_json = {}
     person_json["name"] = person.name
     person_json["class"] = person.sex
 
-    person_json["extra"] = person_extra_info(person, citizenship_ids)
+    person_json["extra"] = person_extra_info(person, citizenship_state)
 
     return person_json
 
 
-def person_extra_info(person, citizenship_ids):
+def person_extra_info(person, citizenship_state):
     extra = {}
     extra["nacimiento"] = person.birthday.year if person.birthday else "?"
     extra["defuncion"] = person.date_of_death.year if person.date_of_death else ""
@@ -133,20 +125,23 @@ def person_extra_info(person, citizenship_ids):
     extra["nacionalidades"] = []
     if person.has_citizenship:
         extra["nacionalidades"].append("it.gif")
-        extra["ciudadania_disponible"] = "true"
-    elif citizenship_ids.get(person.id):
-        extra["ciudadania_disponible"] = "true"
+        extra["ciudadano"] = "true"
+    else:
+        if citizenship_state == "ADMIN":
+            extra["ciudadania_admin"] = "true"
+        elif citizenship_state == "TRIAL":
+            extra["ciudadania_juicio"] = "true"
 
     return extra
 
 
-def partner_to_json(partner, citizenship_ids):
+def partner_to_json(person, partner, citizenship_state):
     spouse = {}
     spouse["name"] = partner.name
     spouse["class"] = partner.sex
-    spouse["extra"] = person_extra_info(partner, citizenship_ids)
+    spouse["extra"] = person_extra_info(partner, citizenship_state)
 
     offspring = partner.offspring.all()
     if offspring:
-        return {"spouse": spouse, "children": tree_data(offspring, citizenship_ids), "extra": {}}
+        return {"spouse": spouse, "children": tree_data(offspring, [person, partner], citizenship_state), "extra": {}}
     return {"spouse": spouse, "extra": {}}

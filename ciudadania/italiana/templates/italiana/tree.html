@@ -3,101 +3,108 @@
 {% load static %}
 <html>
 
-<head>
-  <title>Family Tree</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet"
-    crossorigin="anonymous">
-  <link rel="stylesheet" type="text/css" href="{% static 'tree.css' %}">
-</head>
+  <head>
+    <title>Family Tree</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet"
+      crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static 'tree.css' %}">
+  </head>
 
-<body>
-  <div class="title">
-    <h1>
-      Family Tree
-    </h1>
-  </div>
-  <div id="graph"></div>
+  <body>
+    <div class="title">
+      <h1>
+        Family Tree
+      </h1>
+    </div>
+    <div id="graph"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"
-    integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"
-    integrity="sha512-RJJ1NNC88QhN7dwpCY8rm/6OxI+YdQP48DrLGe/eSAd+n+s1PXwQkkpzzAgoJe4cZFW2GALQoxox61gSY2yQfg=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdn.jsdelivr.net/npm/d3-dtree@2.4.1/dist/dTree.min.js"></script>
-  <script>
-    tree = dTree.init({{ treeData | safe }}, {
-      target: "#graph",
-      debug: true,
-      hideMarriageNodes: false,
-      marriageNodeSize: 25,
-      width: 1200,
-      height: 550,
-      callbacks: {
-        nodeClick: function (name, extra) {
-          console.log(name);
-        },
-        textRenderer: function (name, extra, textClass) {
-          // This callback is optinal but can be used to customize
-          // how the text is rendered without having to rewrite the entire node
-          // from screatch.
-          return "<p align='center' class='" + textClass + "' style='word-wrap:break-word; '><span>" + name + "</span><span>" + extra.nacimiento + ((extra.defuncion === "") ? "" : " - ") + extra.defuncion + ((extra.defuncion === "") ? "" : "") + "</span></p>";
-        },
-        nodeSize: function (nodes, width, textRenderer) {
-          _.map(nodes, function (n) {
-            n.cHeight = 142;
-            n.cWidth = width;
-          });
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"
+      integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ=="
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"
+      integrity="sha512-RJJ1NNC88QhN7dwpCY8rm/6OxI+YdQP48DrLGe/eSAd+n+s1PXwQkkpzzAgoJe4cZFW2GALQoxox61gSY2yQfg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-dtree@2.4.1/dist/dTree.min.js"></script>
+    <script>
+      tree = dTree.init({{ treeData | safe }}, {
+        target: "#graph",
+        debug: true,
+        hideMarriageNodes: false,
+        marriageNodeSize: 25,
+        width: 1200,
+        height: 550,
+        callbacks: {
+          nodeClick: function (name, extra) {
+            console.log(name);
+          },
+          textRenderer: function (name, extra, textClass) {
+            // This callback is optinal but can be used to customize
+            // how the text is rendered without having to rewrite the entire node
+            // from screatch.
+            return "<p align='center' class='" + textClass + "' style='word-wrap:break-word; '><span>" + name + "</span><span>" + extra.nacimiento + ((extra.defuncion === "") ? "" : " - ") + extra.defuncion + ((extra.defuncion === "") ? "" : "") + "</span></p>";
+          },
+          nodeSize: function (nodes, width, textRenderer) {
+            _.map(nodes, function (n) {
+              n.cHeight = 142;
+              n.cWidth = width;
+            });
 
-          return [width, 106];
+            return [width, 106];
+          },
+          nodeHeightSeperation: function (nodeWidth, nodeMaxHeight) {
+            return 200;
+          },
+          nodeRenderer: function (name, x, y, height, width, extra, id, nodeClass, textClass, textRenderer) {
+            // This callback is optional but can be used to customize the
+            // node element using HTML.
+            let node = '';
+            node += '<div ';
+            node += 'style="height:100%;width:100%;max-width:100%;';
+            if ("ciudadano" in extra) {
+              node += 'border-color: green'
+            } else if ("ciudadania_admin" in extra) {
+              node += 'border-color: orange'
+            } else if ("ciudadania_juicio" in extra) {
+              node += 'border-color: purple'
+            } else {
+              node += 'border-color: red'
+            }
+
+
+            node += '" class="' + nodeClass + '" ';
+            node += 'id="node' + id + '">\n';
+            node += "<div class='img-container'><img class='perfil' src='"
+            if ("image" in extra) {
+              node += extra.image
+            } else if (nodeClass === "MALE") {
+              node += '{% static 'placeholder_hombre.jpg' %}'
+            } else if (nodeClass === "FEMALE") {
+              node += '{% static 'placeholder_mujer.jpg' %}'
+            } else {
+              node += '{% static 'placeholder_otro.jpg' %}'
+            }
+            node += "' height='85'/></div>"
+            node += "<div class='txt-container'>" + textRenderer(name, extra, textClass) + "</div>";
+            node += "<div class='flag-container'>";
+            extra.nacionalidades.forEach(nacionalidad => node += "<img class='flag' src='{% static 'it.gif' %}'>");
+            node += '</div></div>';
+            return node;
+          },
+          marriageRenderer: function (x, y, height, width, extra, id, nodeClass) {
+            let node = '';
+            node += '<div '
+            node += 'style="height:100%;width:100%;" ';
+            node += 'class="' + nodeClass + '" ';
+            node += 'id="node' + id + '">\n';
+            node += "<span align='center'>💘<span>";
+            node += '</div>';
+            return node;
+          },
         },
-        nodeHeightSeperation: function (nodeWidth, nodeMaxHeight) {
-          return 200;
-        },
-        nodeRenderer: function (name, x, y, height, width, extra, id, nodeClass, textClass, textRenderer) {
-          // This callback is optional but can be used to customize the
-          // node element using HTML.
-          let node = '';
-          node += '<div ';
-          node += 'style="height:100%;width:100%;max-width:100%;';
-          if (extra && extra.ciudadania_disponible)
-            node += 'border-color: green'
-          else
-            node += 'border-color: red'
-          node += '" class="' + nodeClass + '" ';
-          node += 'id="node' + id + '">\n';
-          node += "<div class='img-container'><img class='perfil' src='"
-          if ("image" in extra) {
-            node += extra.image
-          } else if (nodeClass === "MALE") {
-            node += '{% static 'placeholder_hombre.jpg' %}'
-          } else if (nodeClass === "FEMALE") {
-            node += '{% static 'placeholder_mujer.jpg' %}'
-          } else {
-            node += '{% static 'placeholder_otro.jpg' %}'
-          }
-          node += "' height='85'/></div>"
-          node += "<div class='txt-container'>" + textRenderer(name, extra, textClass) + "</div>";
-          node += "<div class='flag-container'>";
-          extra.nacionalidades.forEach(nacionalidad => node += "<img class='flag' src='{% static 'it.gif' %}'>");
-          node += '</div></div>';
-          return node;
-        },
-        marriageRenderer: function (x, y, height, width, extra, id, nodeClass) {
-          let node = '';
-          node += '<div '
-          node += 'style="height:100%;width:100%;" ';
-          node += 'class="' + nodeClass + '" ';
-          node += 'id="node' + id + '">\n';
-          node += "<span align='center'>💘<span>";
-          node += '</div>';
-          return node;
-        },
-      },
-    });
-  </script>
-</body>
+      });
+    </script>
+  </body>
 
 </html>
