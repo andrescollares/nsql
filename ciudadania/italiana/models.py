@@ -5,7 +5,6 @@ from neomodel import (
     DateProperty,
     BooleanProperty,
     RelationshipTo,
-    IntegerProperty,
 )
 
 

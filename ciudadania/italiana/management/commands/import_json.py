@@ -8,7 +8,7 @@ from italiana.models import Person
 
 
 class Command(BaseCommand):
-    help = "Creates instances from a .json file"
+    help = "Creates Person instances from a .json file"
 
     def add_arguments(self, parser):
         parser.add_argument("file", type=str)
